@@ -1,6 +1,20 @@
-import os, sys, typer
+from csv import excel
+import os, sys, typer, sqlite3, json
+from typing import Optional
+from rich.console import Console
+from rich.theme import Theme
+
+theme = Theme(
+    {
+        "error": "bold red",
+        "warning": "bold yellow",
+        "success": "green",
+        "info": "italic blue"
+        })
 
 TEXMFHOME = "~/Library/texmf/"
+
+console = Console(theme=theme)
 app = typer.Typer()
 
 def config(
