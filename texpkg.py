@@ -17,6 +17,14 @@ TEXMFHOME = "~/Library/texmf/"
 console = Console(theme=theme)
 app = typer.Typer()
 
+def _retrieve_config():
+    try:
+        with open(".config.json","r") as file:
+            return json.load(file)
+    except FileNotFoundError:
+            console.print("[error]Error:[/] .config.json file not found")
+    
+
 def config(
     texmfhome: str, 
     pkg_db: Optional[str] = typer.Argument(None),
