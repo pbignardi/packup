@@ -39,9 +39,11 @@ def _retrieve_config():
         console.print("[error]Error:[/] [info].config.json[/] file not found. Use [command]config[/] and try to re-run.")
         
 
+@app.command()
 def config(
-    texmfhome: str, 
-    pkg_db: Optional[str] = typer.Argument(None),
+    tree_path: str,
+    source_path: str, 
+    pkg_db: str = typer.Argument(default=None),
     mktree: bool = typer.Option(False, help="Create the local packages dir tree"), 
     force: bool = typer.Option(False, help="Overwrite current setting file")):
     """
@@ -49,14 +51,7 @@ def config(
 
     Optionally: set packages database file
     """
-    configs = {
-        "texmfhome": texmfhome
-    }
-    
-    if pkg_db:
-        config["pkg_db"] = pkg_db
-    else:
-        config["pkg_db"] = ".pkg.db"
+    cfg = Config(tree_path,source_path, pkg_db)
 
     if mktree:
         # TODO: implement mktree
@@ -65,9 +60,11 @@ def config(
     try:
         if not os.path.isfile(".config.json") or force:
             with open(".config.json","w") as file:
-                json.dump(configs, file)
+                json.dump(asdict(cfg), file)
+        else:
+            console.print("[warning]Warning:[/] [info].config.json[/] file already exists. Skipping configuration.")
     except:
-        console.print("[error]Error:[/] cannot write settings to JSON file!")
+        console.print("[error]Error:[/] cannot write settings to JSON file!")    
 
 def help():
     print("TeXPKG: deploy and maintain your TeX packages")
