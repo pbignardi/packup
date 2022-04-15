@@ -9,20 +9,11 @@ theme = Theme(
         "error": "bold red",
         "warning": "bold yellow",
         "success": "green",
-        "info": "italic blue"
+        "info": "italic blue",
+        "command": "orange_red1"
         })
 
-@dataclass
-class Config:
-    """
-    Configuration dataclass, used to capture all the options 
-    """
-    tree_path: str
-    source_path: str
-    pkg_db: str
-    def __post_init__(self):
-        self.pkg_db = self.pkg_db if self.pkg_db else ".pkg.db"
-    
+TEXMFHOME = "~/Library/texmf/"
 
 console = Console(theme=theme)
 app = typer.Typer()
