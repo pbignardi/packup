@@ -29,12 +29,15 @@ console = Console(theme=theme)
 app = typer.Typer()
 
 def _retrieve_config():
+    """
+    Fetch the config file and return a Config object
+    """
     try:
         with open(".config.json","r") as file:
-            return json.load(file)
+            return Config(**json.load(file))
     except FileNotFoundError:
-            console.print("[error]Error:[/] .config.json file not found")
-    
+        console.print("[error]Error:[/] [info].config.json[/] file not found. Use [command]config[/] and try to re-run.")
+        
 
 def config(
     texmfhome: str, 
