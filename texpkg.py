@@ -37,7 +37,45 @@ def _retrieve_config():
             return Config(**json.load(file))
     except FileNotFoundError:
         console.print("[error]Error:[/] [info].config.json[/] file not found. Use [command]config[/] and try to re-run.")
-        
+
+def _mktree(localdirname):
+    """
+    Create the local Tex Directory Structure, necessary to install local packages.
+    Each user should have its own TDS tree. Do not mess with the root TDS of TeX
+    """
+    dirs =[
+        f"{localdirname}/bibtex/bib",
+        f"{localdirname}/bibtex/bst",
+        f"{localdirname}/doc",
+        f"{localdirname}/fonts/afm",
+        f"{localdirname}/fonts/map",
+        f"{localdirname}/fonts/misc",
+        f"{localdirname}/fonts/pk",
+        f"{localdirname}/fonts/source",
+        f"{localdirname}/fonts/tfm",
+        f"{localdirname}/fonts/type1",
+        f"{localdirname}/fonts/opentype",
+        f"{localdirname}/fonts/truetype",
+        f"{localdirname}/generic",
+        f"{localdirname}/scripts",
+        f"{localdirname}/source",
+        f"{localdirname}/tex/context",
+        f"{localdirname}/tex/generic",
+        f"{localdirname}/tex/latex",
+        f"{localdirname}/tex/plain",
+        f"{localdirname}/tex/xelatex",
+        f"{localdirname}/tex/xetex",
+        f"{localdirname}/tex/luatex",
+        f"{localdirname}/tex/lualatex"
+        ]
+    if os.path.isdir(localdirname):
+        console.print("Local TEXMF directory [info]already exists[/]")
+    for d in dirs:
+        console.print(f"Creating directory [info]{d}[/]")
+        os.makedirs(d)
+    
+    console.print(f"Local TeX Directory Structure [success]succesfully created[/]")
+
 
 @app.command()
 def config(
@@ -66,17 +104,26 @@ def config(
     except:
         console.print("[error]Error:[/] cannot write settings to JSON file!")    
 
-def help():
-    print("TeXPKG: deploy and maintain your TeX packages")
-
 def remove(pkg: str):
     pass
 
 def update(pkg: str):
     pass
 
-def install(input_file: str):
-    print(f"Installing at {input_file}")
+@app.command()
+def install(pkg: str):
+    """
+    Install command, to install specified pkg
+
+    To install we need:
+    - check if package is already installed (if it is abort)
+    - understand the destination folder
+    - copy the packages in the install folder into the tree_path
+    """
+    cfg = _retrieve_config()
+    conn = sqlite3.connect(cfg.pkg_db)
+    c = conn.cursor()
+
     pass
 
 if __name__ == "__main__":
