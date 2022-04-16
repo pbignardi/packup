@@ -107,6 +107,8 @@ def _mktree(localdirname):
     
     console.print(f"Local TeX Directory Structure [success]succesfully created[/]")
 
+def _get_texmfhome():
+    path = os.popen("kpsewhich -var-value TEXMFHOME").read().replace("\n","")
 
 @app.command()
 def config(
