@@ -143,6 +143,9 @@ def init(
 
 @app.command()
 def wipe_tree(no_confirm: bool = typer.Option(default=False)):
+    """
+    DElete current TEXMFHOME tree, and create a new one.
+    """
     if not no_confirm:
         msg = "This will [warning]delete the current tree and its packages[/], confirm?"
         if not Confirm.ask(msg, console=console):
