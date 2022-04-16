@@ -188,7 +188,9 @@ def update(pkg: str):
     pass
 
 @app.command()
-def install(pkg_path: str = typer.Argument(help="Path to package directory")):
+def install(
+    pkg_path: str = typer.Argument(help="Path to package directory"),
+    verbose: bool = typer.Option(True)):
     """
     Install command, to install specified pkg.
     Package must be a path to a directory, where the package files are contained.
