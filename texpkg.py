@@ -151,6 +151,9 @@ def wipe_tree(no_confirm: bool = typer.Option(default=False)):
 
 @app.command()
 def wipe_db(no_confirm: bool = typer.Option(default=False)):
+    """
+    Delete package database and initialize a new (empty) one
+    """
     if not no_confirm:
         msg = "This will [warning]delete the whole package database[/], confirm?"
         if not Confirm.ask(msg, console=console):
