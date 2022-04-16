@@ -13,6 +13,7 @@ theme = Theme(
         "command": "orange_red1"
         })
     
+DEBUG = True    
 
 console = Console(theme=theme)
 app = typer.Typer()
