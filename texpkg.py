@@ -148,13 +148,29 @@ def init(
     conn = sqlite3.connect(".pkg.db")
     c = conn.cursor()
     try:
-        if not os.path.isfile(".config.json") or force:
-            with open(".config.json","w") as file:
-                json.dump(asdict(cfg), file)
-        else:
-            console.print("[warning]Warning:[/] [info].config.json[/] file already exists. Skipping configuration.")
-    except:
-        console.print("[error]Error:[/] cannot write settings to JSON file!")    
+        _create_db()
+    except sqlite3.OperationalError as e:
+        console.print(str(e),style="error")
+
+
+@app.command()
+def wipe_tree(no_confirm: bool = typer.Option(default=False)):
+    if not no_confirm:
+        msg = "This will [warning]delete the current tree and its packages[/], confirm?"
+        if not Confirm.ask(msg, console=console):
+            return
+    _mktree(_get_texmfhome(),force=True)
+
+@app.command()
+def wipe_db(no_confirm: bool = typer.Option(default=False)):
+    if not no_confirm:
+        msg = "This will [warning]delete the whole package database[/], confirm?"
+        if not Confirm.ask(msg, console=console):
+            return
+    os.remove(".pkg.db")
+    conn = sqlite3.connect(".pkg.db")
+    _create_db(conn)
+    
 
 def remove(pkg: str):
     pass
