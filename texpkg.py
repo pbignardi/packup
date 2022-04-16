@@ -124,12 +124,11 @@ def _create_db(conn:sqlite3.Connection):
     conn.commit()
 
 @app.command()
-def config(
-    tree_path: str,
-    source_path: str, 
-    pkg_db: str = typer.Argument(default=None),
-    mktree: bool = typer.Option(False, help="Create the local packages dir tree"), 
-    force: bool = typer.Option(False, help="Overwrite current setting file")):
+def init(
+    #tree_path: str = typer.Option(default="~/.texmf/",prompt="Enter TEXMF path", help="Path of the TEXMF tree"),
+    #src_path: str = typer.Option(...,prompt="Packages source path", help="Path of the sources"), 
+    #pkg_db: str = typer.Option(default=".pkg.db",prompt="Packages database path", help="Path of the packages DB"),
+    force: bool = typer.Option(False, help="Overwrite current setting file",confirmation_prompt="Are you sure? This will erase the database as well")):
     """
     Set local packages path.
 
