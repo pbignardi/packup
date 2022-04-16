@@ -1,6 +1,5 @@
 from dataclasses import dataclass, asdict
 import os, sys, typer, sqlite3, json
-from click import prompt
 
 from rich.console import Console
 from rich.theme import Theme
@@ -20,6 +19,7 @@ class Config:
     Configuration dataclass, used to capture all the options 
     """
     tree_path: str
+    source_path: str
     pkg_db: str
     def __post_init__(self):
         self.pkg_db = self.pkg_db if self.pkg_db else ".pkg.db"
@@ -102,32 +102,30 @@ def _mktree(localdirname):
     if os.path.isdir(localdirname):
         console.print("Local TEXMF directory [info]already exists[/]")
     for d in dirs:
-        if not os.path.isdir(d):
-            console.print(f"Creating directory [info]{d}[/]")
-            os.makedirs(d)
-        else:
-            console.print(f"Directory [info]{d}[/] aready exists")
-
+        console.print(f"Creating directory [info]{d}[/]")
+        os.makedirs(d)
+    
     console.print(f"Local TeX Directory Structure [success]succesfully created[/]")
 
-def _get_texmfhome():
-    path = os.popen("kpsewhich -var-value TEXMFHOME").read().replace("\n","")
 
 @app.command()
-def init(
-    tree_path: str = typer.Option(default="~/.texmf/",prompt="Enter TEXMF path", help="Path of the TEXMF tree"),
-    #src_path: str = typer.Option(...,prompt="Packages source path", help="Path of the sources"), 
-    pkg_db: str = typer.Option(default="~/.texmf/.pkg_db/",prompt="Packages database path", help="Path of the packages DB"),
+def config(
+    tree_path: str,
+    source_path: str, 
+    pkg_db: str = typer.Argument(default=None),
+    mktree: bool = typer.Option(False, help="Create the local packages dir tree"), 
     force: bool = typer.Option(False, help="Overwrite current setting file")):
     """
-    Create the tree path and set up the package database.
+    Set local packages path.
 
-    Set TEXMF path. If TeX Directory Structure is not valid, it rebuilds the tree. 
+    Optionally: set packages database file
     """
-    os.environ["TEXMFHOME"] = os.path.abspath(tree_path)
-    
-    
-    cfg = Config(tree_path, pkg_db)
+    cfg = Config(tree_path,source_path, pkg_db)
+
+    if mktree:
+        # TODO: implement mktree
+        pass
+
     try:
         if not os.path.isfile(".config.json") or force:
             with open(".config.json","w") as file:
@@ -136,9 +134,6 @@ def init(
             console.print("[warning]Warning:[/] [info].config.json[/] file already exists. Skipping configuration.")
     except:
         console.print("[error]Error:[/] cannot write settings to JSON file!")    
-
-def init():
-    typer.prompt(f"Enter TeX Directory Structure path (TEXMFHOME)")
 
 def remove(pkg: str):
     pass
