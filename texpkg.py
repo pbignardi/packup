@@ -17,12 +17,27 @@ theme = Theme(
 console = Console(theme=theme)
 app = typer.Typer()
 
+def _rm_pkg(pkg_name: str, db_conn: sqlite3.Connection):
+    c = db_conn.cursor()
+    c.execute("DELETE FROM packages WHERE name=?",(pkg_name,))
+    db_conn.commit()
+    c.close()
+    
 def _pkg_exists(pkg: str, db_conn: sqlite3.Connection):
     c = db_conn.cursor()
     c.execute("SELECT * FROM packages WHERE name=?",(pkg,))
     out = c.fetchall()
     c.close()
     return len(out) > 0
+
+def _add_pkg(pkg_name: str, pkg_type: str, db_conn: sqlite3.Connection):
+    c = db_conn.cursor()
+    c.execute("INSERT INTO packages VALUES (:name, 1, :type)",{
+        "name": pkg_name,
+        "type": pkg_type
+    })
+    db_conn.commit()
+    c.close()
 
 
 def _check_tds(localdirname):
