@@ -21,6 +21,7 @@ def _pkg_exists(pkg: str, db_conn: sqlite3.Connection):
     c = db_conn.cursor()
     c.execute("SELECT * FROM packages WHERE name=?",(pkg,))
     out = c.fetchall()
+    c.close()
     return len(out) > 0
 
 
