@@ -201,6 +201,11 @@ def install(
     - understand the destination folder
     - copy the packages in the install folder into the tree_path
     """
+    # get pkg name - remove whitespaces in pkg_name
+    pkg_name = os.path.basename(os.path.abspath(pkg_path))
+    if " " in pkg_name:
+        console.print("Package directory name [error]must not contain whitespaces[/].")
+        return
 
     conn = sqlite3.connect(".pkg.db")
     c = conn.cursor()
