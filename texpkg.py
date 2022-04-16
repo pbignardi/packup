@@ -12,17 +12,6 @@ theme = Theme(
         "info": "italic blue",
         "command": "orange_red1"
         })
-
-@dataclass
-class Config:
-    """
-    Configuration dataclass, used to capture all the options 
-    """
-    tree_path: str
-    source_path: str
-    pkg_db: str
-    def __post_init__(self):
-        self.pkg_db = self.pkg_db if self.pkg_db else ".pkg.db"
     
 
 console = Console(theme=theme)
@@ -132,7 +121,6 @@ def init(
     """
     Create the tree path and set up the package database.
     """
-    cfg = Config(tree_path,source_path, pkg_db)
 
     # get TEXMFHOME variable and confirm is ok
     texmf = _get_texmfhome()    
