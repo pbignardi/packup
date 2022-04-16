@@ -130,16 +130,23 @@ def init(
     #pkg_db: str = typer.Option(default=".pkg.db",prompt="Packages database path", help="Path of the packages DB"),
     force: bool = typer.Option(False, help="Overwrite current setting file",confirmation_prompt="Are you sure? This will erase the database as well")):
     """
-    Set local packages path.
-
-    Optionally: set packages database file
+    Create the tree path and set up the package database.
     """
     cfg = Config(tree_path,source_path, pkg_db)
 
-    if mktree:
-        # TODO: implement mktree
-        pass
-
+    # get TEXMFHOME variable and confirm is ok
+    texmf = _get_texmfhome()    
+    if not Confirm.ask(f"TEXMFHOME env variable is set at [info]{texmf}[/], continue?",console=console,default=False):
+        console.print(f"[info]Change the TEXMFHOME environment variable and re-run the [command]init[/] command[/]")
+        return
+    
+    # Create the tree if it's not ok
+    if not _check_tds(texmf) or force:
+        _mktree(texmf) 
+    
+    # Create the database and package table
+    conn = sqlite3.connect(".pkg.db")
+    c = conn.cursor()
     try:
         if not os.path.isfile(".config.json") or force:
             with open(".config.json","w") as file:
