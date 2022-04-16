@@ -151,7 +151,7 @@ def wipe_tree(no_confirm: bool = typer.Option(default=False)):
         if not Confirm.ask(msg, console=console):
             return
     shutil.rmtree(_get_texmfhome())
-    _mktree(_get_texmfhome(),force=True)
+    _mktree(_get_texmfhome())
 
 @app.command()
 def wipe_db(no_confirm: bool = typer.Option(default=False)):
