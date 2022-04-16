@@ -1,5 +1,6 @@
 from dataclasses import dataclass, asdict
 import os, sys, typer, sqlite3, json
+from click import prompt
 
 from rich.console import Console
 from rich.theme import Theme
@@ -19,7 +20,6 @@ class Config:
     Configuration dataclass, used to capture all the options 
     """
     tree_path: str
-    source_path: str
     pkg_db: str
     def __post_init__(self):
         self.pkg_db = self.pkg_db if self.pkg_db else ".pkg.db"
@@ -37,6 +37,37 @@ def _retrieve_config():
             return Config(**json.load(file))
     except FileNotFoundError:
         console.print("[error]Error:[/] [info].config.json[/] file not found. Use [command]config[/] and try to re-run.")
+
+def _check_tds(localdirname):
+    """
+    Check if the TDS is populated correctly
+    """
+    dirs =[
+        f"{localdirname}/bibtex/bib",
+        f"{localdirname}/bibtex/bst",
+        f"{localdirname}/doc",
+        f"{localdirname}/fonts/afm",
+        f"{localdirname}/fonts/map",
+        f"{localdirname}/fonts/misc",
+        f"{localdirname}/fonts/pk",
+        f"{localdirname}/fonts/source",
+        f"{localdirname}/fonts/tfm",
+        f"{localdirname}/fonts/type1",
+        f"{localdirname}/fonts/opentype",
+        f"{localdirname}/fonts/truetype",
+        f"{localdirname}/generic",
+        f"{localdirname}/scripts",
+        f"{localdirname}/source",
+        f"{localdirname}/tex/context",
+        f"{localdirname}/tex/generic",
+        f"{localdirname}/tex/latex",
+        f"{localdirname}/tex/plain",
+        f"{localdirname}/tex/xelatex",
+        f"{localdirname}/tex/xetex",
+        f"{localdirname}/tex/luatex",
+        f"{localdirname}/tex/lualatex"
+        ]
+    return all(os.path.isdir(d) for d in dirs)
 
 def _mktree(localdirname):
     """
@@ -71,30 +102,32 @@ def _mktree(localdirname):
     if os.path.isdir(localdirname):
         console.print("Local TEXMF directory [info]already exists[/]")
     for d in dirs:
-        console.print(f"Creating directory [info]{d}[/]")
-        os.makedirs(d)
-    
+        if not os.path.isdir(d):
+            console.print(f"Creating directory [info]{d}[/]")
+            os.makedirs(d)
+        else:
+            console.print(f"Directory [info]{d}[/] aready exists")
+
     console.print(f"Local TeX Directory Structure [success]succesfully created[/]")
 
+def _get_texmfhome():
+    path = os.popen("kpsewhich -var-value TEXMFHOME").read().replace("\n","")
 
 @app.command()
-def config(
-    tree_path: str,
-    source_path: str, 
-    pkg_db: str = typer.Argument(default=None),
-    mktree: bool = typer.Option(False, help="Create the local packages dir tree"), 
+def init(
+    tree_path: str = typer.Option(default="~/.texmf/",prompt="Enter TEXMF path", help="Path of the TEXMF tree"),
+    #src_path: str = typer.Option(...,prompt="Packages source path", help="Path of the sources"), 
+    pkg_db: str = typer.Option(default="~/.texmf/.pkg_db/",prompt="Packages database path", help="Path of the packages DB"),
     force: bool = typer.Option(False, help="Overwrite current setting file")):
     """
-    Set local packages path.
+    Create the tree path and set up the package database.
 
-    Optionally: set packages database file
+    Set TEXMF path. If TeX Directory Structure is not valid, it rebuilds the tree. 
     """
-    cfg = Config(tree_path,source_path, pkg_db)
-
-    if mktree:
-        # TODO: implement mktree
-        pass
-
+    os.environ["TEXMFHOME"] = os.path.abspath(tree_path)
+    
+    
+    cfg = Config(tree_path, pkg_db)
     try:
         if not os.path.isfile(".config.json") or force:
             with open(".config.json","w") as file:
@@ -103,6 +136,9 @@ def config(
             console.print("[warning]Warning:[/] [info].config.json[/] file already exists. Skipping configuration.")
     except:
         console.print("[error]Error:[/] cannot write settings to JSON file!")    
+
+def init():
+    typer.prompt(f"Enter TeX Directory Structure path (TEXMFHOME)")
 
 def remove(pkg: str):
     pass
