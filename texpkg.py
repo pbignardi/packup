@@ -205,4 +205,6 @@ def install(pkg_path: str = typer.Argument(help="Path to package directory")):
     pass
 
 if __name__ == "__main__":
+    if DEBUG:
+        os.environ["TEXMFHOME"] = os.path.abspath(".")
     app()
