@@ -17,6 +17,12 @@ theme = Theme(
 console = Console(theme=theme)
 app = typer.Typer()
 
+def _pkg_exists(pkg: str, db_conn: sqlite3.Connection):
+    c = db_conn.cursor()
+    c.execute("SELECT * FROM packages WHERE name=?",(pkg,))
+    out = c.fetchall()
+    return len(out) > 0
+
 def _retrieve_config():
     """
     Fetch the config file and return a Config object
