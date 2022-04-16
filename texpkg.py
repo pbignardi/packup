@@ -23,9 +23,9 @@ def _rm_pkg(pkg_name: str, db_conn: sqlite3.Connection):
     db_conn.commit()
     c.close()
     
-def _pkg_exists(pkg: str, db_conn: sqlite3.Connection):
+def _pkg_exists(pkg_name: str, db_conn: sqlite3.Connection):
     c = db_conn.cursor()
-    c.execute("SELECT * FROM packages WHERE name=?",(pkg,))
+    c.execute("SELECT * FROM packages WHERE name=?",(pkg_name,))
     out = c.fetchall()
     c.close()
     return len(out) > 0
