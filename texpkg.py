@@ -109,6 +109,16 @@ def _mktree(localdirname):
 
 def _get_texmfhome():
     path = os.popen("kpsewhich -var-value TEXMFHOME").read().replace("\n","")
+    return path
+
+def _create_db(conn:sqlite3.Connection):
+    c = conn.cursor()
+    c.execute("""CREATE TABLE packages (
+            name text,
+            version integer,
+            type text
+        )""")
+    conn.commit()
 
 @app.command()
 def config(
