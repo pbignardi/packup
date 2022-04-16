@@ -58,7 +58,7 @@ def _check_tds(localdirname):
         ]
     return all(os.path.isdir(d) for d in dirs)
 
-def _mktree(localdirname, force=False):
+def _mktree(localdirname):
     """
     Create the local Tex Directory Structure, necessary to install local packages.
     Each user should have its own TDS tree. Do not mess with the root TDS of TeX
@@ -91,7 +91,7 @@ def _mktree(localdirname, force=False):
     if os.path.isdir(localdirname):
         console.print("Local TEXMF directory [info]already exists[/]")
     for d in dirs:
-        if force or not os.path.isdir(d):
+        if not os.path.isdir(d):
             console.print(f"Creating directory [info]{d}[/]")
             os.makedirs(d)
         else:
@@ -147,6 +147,7 @@ def wipe_tree(no_confirm: bool = typer.Option(default=False)):
         msg = "This will [warning]delete the current tree and its packages[/], confirm?"
         if not Confirm.ask(msg, console=console):
             return
+    shutil.rmtree(_get_texmfhome())
     _mktree(_get_texmfhome(),force=True)
 
 @app.command()
