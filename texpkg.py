@@ -1,8 +1,8 @@
-from dataclasses import dataclass, asdict
-import os, sys, typer, sqlite3, json
+import os, sys, typer, sqlite3, json, shutil
 
 from rich.console import Console
 from rich.theme import Theme
+from rich.prompt import Confirm
 
 theme = Theme(
     {
@@ -23,15 +23,6 @@ def _pkg_exists(pkg: str, db_conn: sqlite3.Connection):
     out = c.fetchall()
     return len(out) > 0
 
-def _retrieve_config():
-    """
-    Fetch the config file and return a Config object
-    """
-    try:
-        with open(".config.json","r") as file:
-            return Config(**json.load(file))
-    except FileNotFoundError:
-        console.print("[error]Error:[/] [info].config.json[/] file not found. Use [command]config[/] and try to re-run.")
 
 def _check_tds(localdirname):
     """
@@ -141,7 +132,7 @@ def init(
     # Create the database and package table
     conn = sqlite3.connect(".pkg.db")
     c = conn.cursor()
-    try:
+    try: 
         _create_db()
     except sqlite3.OperationalError as e:
         console.print(str(e),style="error")
@@ -180,17 +171,19 @@ def update(pkg: str):
     pass
 
 @app.command()
-def install(pkg: str):
+def install(pkg_path: str = typer.Argument(help="Path to package directory")):
     """
-    Install command, to install specified pkg
+    Install command, to install specified pkg.
+    Package must be a path to a directory, where the package files are contained.
+
 
     To install we need:
     - check if package is already installed (if it is abort)
     - understand the destination folder
     - copy the packages in the install folder into the tree_path
     """
-    cfg = _retrieve_config()
-    conn = sqlite3.connect(cfg.pkg_db)
+
+    conn = sqlite3.connect(".pkg.db")
     c = conn.cursor()
 
     pass
