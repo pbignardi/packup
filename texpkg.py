@@ -184,6 +184,23 @@ def wipe_db(no_confirm: bool = typer.Option(default=False)):
 def remove(pkg: str):
     pass
 
+@app.command()
+def view():
+    """
+    Print the list of installed packages and all the informations in the database
+    """
+    con = sqlite3.connect(".pkg.db")
+    
+    pkg_list = _get_all_pkgs(con) # this could throw exception if packages table doesnt exists
+    t = Table("Package", "Version", "Type", "Path", box=box.HORIZONTALS, header_style="blue bold")
+    for entry in pkg_list:
+        name, ver, typ, path = map(str,entry)
+        t.add_row(name, ver, typ)
+
+    console.print(t)
+    return
+    
+
 def update(pkg: str):
     pass
 
