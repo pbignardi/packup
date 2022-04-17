@@ -201,6 +201,9 @@ def install(
     - understand the destination folder
     - copy the packages in the install folder into the tree_path
     """
+    # check if path exists
+    if not os.path.isdir(pkg_path) or len(os.listdir(pkg_path)) == 0:
+        console.print("Package directory [error]does not exists[/] or [error]is empty[/]")
     # get pkg name - remove whitespaces in pkg_name
     pkg_name = os.path.basename(os.path.abspath(pkg_path))
     if " " in pkg_name:
