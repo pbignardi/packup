@@ -18,22 +18,6 @@ DEBUG = True
 console = Console(theme=theme)
 app = typer.Typer()
 
-def _unpack_name_opt(file):
-    with open(file,"r") as f:
-        line = f.readline()
-        while line:
-            if "ProvidesPackage" in line:
-                pkg_matches = re.findall("\{[a-zA-Z0-9]*\}", line)
-                ver_matches = re.findall("\[.*?\]", line)
-                if pkg_matches:
-                    package_string = pkg_matches[0][1:-1]
-                    version_string = ver_matches[0][1:-1] if ver_matches else ""
-                    return package_string, version_string
-
-def _extract_ver_desc(opt: str):
-    version = re.search("[0-9]{1,4}[./-]?[0-9]{1,4}[./-]?[0-9]{1,4}", opt)
-    return version.group(), (opt[0:version.start()] + opt[version.end():]).lstrip()
-
 def _rm_pkg(pkg_name: str, db_conn: sqlite3.Connection):
     c = db_conn.cursor()
     c.execute("DELETE FROM packages WHERE name=?",(pkg_name,))
@@ -88,7 +72,7 @@ def _check_tds(localdirname):
         ]
     return all(os.path.isdir(d) for d in dirs)
 
-def _mktree(localdirname):
+def _mktree(localdirname, verbose=False):
     """
     Create the local Tex Directory Structure, necessary to install local packages.
     Each user should have its own TDS tree. Do not mess with the root TDS of TeX
