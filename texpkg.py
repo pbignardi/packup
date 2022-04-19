@@ -1,8 +1,13 @@
-import os, sys, typer, sqlite3, json, shutil
+from ensurepip import version
+from importlib.metadata import packages_distributions
+import os, sys, typer, sqlite3, json, shutil,re
+from xml.etree.ElementInclude import include
 
 from rich.console import Console
 from rich.theme import Theme
 from rich.prompt import Confirm
+from rich.table import Table
+from rich import box
 
 theme = Theme(
     {
@@ -12,7 +17,7 @@ theme = Theme(
         "info": "italic blue",
         "command": "orange_red1"
         })
-    
+
 DEBUG = True    
 
 console = Console(theme=theme)
@@ -40,7 +45,7 @@ def _rm_pkg(pkg_name: str, db_conn: sqlite3.Connection):
     c.execute("DELETE FROM packages WHERE name=?",(pkg_name,))
     db_conn.commit()
     c.close()
-    
+
 def _pkg_exists(pkg_name: str, db_conn: sqlite3.Connection):
     c = db_conn.cursor()
     c.execute("SELECT * FROM packages WHERE name=?",(pkg_name,))
@@ -48,15 +53,15 @@ def _pkg_exists(pkg_name: str, db_conn: sqlite3.Connection):
     c.close()
     return len(out) > 0
 
-def _add_pkg(pkg_name: str, pkg_type: str, db_conn: sqlite3.Connection):
+def _add_pkg(pkg_name: str, pkg_type: str, pkg_path: str, db_conn: sqlite3.Connection):
     c = db_conn.cursor()
-    c.execute("INSERT INTO packages VALUES (:name, 1, :type)",{
+    c.execute("INSERT INTO packages VALUES (:name, 1, :type, :path)",{
         "name": pkg_name,
-        "type": pkg_type
+        "type": pkg_type,
+        "path": pkg_path
     })
     db_conn.commit()
     c.close()
-
 
 def _check_tds(localdirname):
     """
@@ -123,7 +128,8 @@ def _mktree(localdirname, verbose=False):
         console.print("Local TEXMF directory [info]already exists[/]")
     for d in dirs:
         if not os.path.isdir(d):
-            console.print(f"Creating directory [info]{d}[/]")
+            if verbose:
+                console.print(f"Creating directory [info]{d}[/]")
             os.makedirs(d)
         else:
             console.print(f"Directory [info]{d}[/] aready exists")
@@ -134,21 +140,48 @@ def _get_texmfhome():
     path = os.popen("kpsewhich -var-value TEXMFHOME").read().replace("\n","")
     return path
 
+def _check_update(pkg: str,con: sqlite3.Connection):
+    pass
+
+def _get_all_pkgs(con:sqlite3.Connection):
+    c = con.cursor()
+    c.execute("SELECT * FROM packages")
+    return c.fetchall()
+
 def _create_db(conn:sqlite3.Connection):
     c = conn.cursor()
     c.execute("""CREATE TABLE packages (
             name text,
             version integer,
-            type text
+            type text,
+            path text
         )""")
     conn.commit()
 
+def _type_folder(pkg_type: str):
+    """
+    Get the installation folder based on the package type
+    """
+    if pkg_type in ["sty", "cls"]:
+        return "latex"
+
+def _get_type(pkg_name: str, db_conn: sqlite3.Connection):
+    pass
+
+def _find_type(pkg_path):
+    """
+    Find type of package by looking at the extensions in the path
+    """
+    exts = map(lambda x: os.path.splitext(x)[1],os.listdir(pkg_path))
+    if ".sty" in exts:
+        return "sty"
+    if ".cls" in exts:
+        return "cls"
+    
+
 @app.command()
-def init(
-    #tree_path: str = typer.Option(default="~/.texmf/",prompt="Enter TEXMF path", help="Path of the TEXMF tree"),
-    #src_path: str = typer.Option(...,prompt="Packages source path", help="Path of the sources"), 
-    #pkg_db: str = typer.Option(default=".pkg.db",prompt="Packages database path", help="Path of the packages DB"),
-    force: bool = typer.Option(False, help="Overwrite current setting file",confirmation_prompt="Are you sure? This will erase the database as well")):
+def init(force: bool = typer.Option(False, help="Overwrite current setting file",
+    confirmation_prompt="Are you sure? This will erase the database as well")):
     """
     Create the tree path and set up the package database.
     """
@@ -167,7 +200,8 @@ def init(
     conn = sqlite3.connect(".pkg.db")
     c = conn.cursor()
     try: 
-        _create_db()
+        _create_db(conn)
+        console.print("Database [success]succesfully created[/]")
     except sqlite3.OperationalError as e:
         console.print(str(e),style="error")
 
@@ -175,14 +209,16 @@ def init(
 @app.command()
 def wipe_tree(no_confirm: bool = typer.Option(default=False)):
     """
-    DElete current TEXMFHOME tree, and create a new one.
+    Delete current TEXMFHOME tree, and create a new one.
     """
     if not no_confirm:
-        msg = "This will [warning]delete the current tree and its packages[/], confirm?"
+        msg = "[warning]Deleting the current tree and its packages[/], confirm?"
         if not Confirm.ask(msg, console=console):
             return
-    shutil.rmtree(_get_texmfhome())
-    _mktree(_get_texmfhome())
+    try:            
+        shutil.rmtree(_get_texmfhome())
+    except FileNotFoundError as e:
+        pass
 
 @app.command()
 def wipe_db(no_confirm: bool = typer.Option(default=False)):
@@ -190,13 +226,23 @@ def wipe_db(no_confirm: bool = typer.Option(default=False)):
     Delete package database and initialize a new (empty) one
     """
     if not no_confirm:
-        msg = "This will [warning]delete the whole package database[/], confirm?"
+        msg = "[warning]Deleting the package database[/], confirm?"
         if not Confirm.ask(msg, console=console):
             return
-    os.remove(".pkg.db")
+    try:            
+        os.remove(".pkg.db")
+    except FileNotFoundError as e:
+        pass
     conn = sqlite3.connect(".pkg.db")
-    _create_db(conn)
-    
+
+@app.command()    
+def reset(no_confirm: bool = typer.Option(default=False)):
+    """
+    Nuke database and tree. Equivalent to using wipe_db and wipe_tree commands
+    """
+    wipe_db(no_confirm)
+    wipe_tree(no_confirm)
+
 
 def remove(pkg: str):
     pass
@@ -209,7 +255,7 @@ def view():
     con = sqlite3.connect(".pkg.db")
     
     pkg_list = _get_all_pkgs(con) # this could throw exception if packages table doesnt exists
-    t = Table("Package", "Version", "Type", "Path", box=box.HORIZONTALS, header_style="blue bold")
+    t = Table("Package", "Version", "Type", box=box.HORIZONTALS, header_style="blue bold")
     for entry in pkg_list:
         name, ver, typ, path = map(str,entry)
         t.add_row(name, ver, typ)
@@ -219,16 +265,18 @@ def view():
     
 
 def update(pkg: str):
-    pass
+    """
+    Update all the packages installed by copying the
+    """
 
 @app.command()
 def install(
-    pkg_path: str = typer.Argument(help="Path to package directory"),
-    verbose: bool = typer.Option(True)):
+    pkg_path: str,
+    verbose: bool = typer.Option(False)):
     """
     Install command, to install specified pkg.
-    Package must be a path to a directory, where the package files are contained.
-
+    Package must be a path to a directory, where the package files are contained, and dirname must not contain whitespaces.
+    
 
     To install we need:
     - check if package is already installed (if it is abort)
@@ -244,12 +292,41 @@ def install(
         console.print("Package directory name [error]must not contain whitespaces[/].")
         return
 
-    conn = sqlite3.connect(".pkg.db")
-    c = conn.cursor()
+    if verbose:
+        console.print(f"Installing package [info]{pkg_name}[/]")
+    # connect to db
+    con = sqlite3.connect(".pkg.db")
+    if verbose:
+        console.print("Connected to database")
 
-    pass
+    ispkg = _pkg_exists(pkg_name, con)
+
+    # define installation destination
+    texmfhome = _get_texmfhome()
+    pkg_type = _find_type(os.path.abspath(pkg_path)) #if not ispkg else _get_type(pkg_name,con)
+    tex_folder = _type_folder(pkg_type)
+    dest = os.path.join(texmfhome,tex_folder)
+    
+    # actual installation
+    try:
+        console.print(f"Copying files for package [info]{pkg_name}[/]")
+        shutil.copytree(pkg_path, os.path.join(dest,pkg_name)) 
+    except FileExistsError as e:
+        console.print(str(e), style="error")
+        return
+
+    # add entry into database - maybe if it doesnt work we should abort the whole thing
+    if verbose:
+        console.print("[info]Adding entry[/] in the package database")
+    _add_pkg(pkg_name, pkg_type, os.path.abspath(pkg_path), con)
+
+    console.print(f"Package [info]{pkg_name}[/] has been [success]succesfully installed[/]")
+
+    if _pkg_exists(pkg_name, con):
+        console.print("Package [info]already installed[/]. Updating")
+
 
 if __name__ == "__main__":
     if DEBUG:
-        os.environ["TEXMFHOME"] = os.path.abspath(".")
+        os.environ["TEXMFHOME"] = os.path.abspath("./texmf/")
     app()
