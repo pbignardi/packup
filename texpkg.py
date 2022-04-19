@@ -18,6 +18,23 @@ DEBUG = True
 console = Console(theme=theme)
 app = typer.Typer()
 
+def _unpack_name_opt(file, isclass=False):
+    provide_cmd = "ProvidesClass" if isclass else "ProvidesPackage" 
+    with open(file,"r") as f:
+        line = f.readline()
+        while line:
+            if provide_cmd in line:
+                pkg_matches = re.findall("\{[a-zA-Z0-9]*\}", line)
+                ver_matches = re.findall("\[.*?\]", line)
+                if pkg_matches:
+                    package_string = pkg_matches[0][1:-1]
+                    version_string = ver_matches[0][1:-1] if ver_matches else ""
+                    return package_string, version_string
+
+def _extract_ver_desc(opt: str):
+    version = re.search("[0-9]{1,4}[./-]?[0-9]{1,4}[./-]?[0-9]{1,4}", opt)
+    return version.group(), (opt[0:version.start()] + opt[version.end():]).lstrip()
+
 def _rm_pkg(pkg_name: str, db_conn: sqlite3.Connection):
     c = db_conn.cursor()
     c.execute("DELETE FROM packages WHERE name=?",(pkg_name,))
