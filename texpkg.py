@@ -22,6 +22,7 @@ DEBUG = True
 
 console = Console(theme=theme)
 app = typer.Typer()
+conn = sqlite3.connect(".pkg.db")
 
 def _unpack_name_opt(file, isclass=False):
     provide_cmd = "ProvidesClass" if isclass else "ProvidesPackage" 
@@ -40,27 +41,27 @@ def _extract_ver_desc(opt: str):
     version = re.search("[0-9]{1,4}[./-]?[0-9]{1,4}[./-]?[0-9]{1,4}", opt)
     return version.group(), (opt[0:version.start()] + opt[version.end():]).lstrip()
 
-def _rm_pkg(pkg_name: str, db_conn: sqlite3.Connection):
-    c = db_conn.cursor()
+def _rm_pkg(pkg_name: str):
+    c = conn.cursor()
     c.execute("DELETE FROM packages WHERE name=?",(pkg_name,))
-    db_conn.commit()
+    conn.commit()
     c.close()
 
-def _pkg_exists(pkg_name: str, db_conn: sqlite3.Connection):
-    c = db_conn.cursor()
+def _pkg_exists(pkg_name: str):
+    c = conn.cursor()
     c.execute("SELECT * FROM packages WHERE name=?",(pkg_name,))
     out = c.fetchall()
     c.close()
     return len(out) > 0
 
-def _add_pkg(pkg_name: str, pkg_type: str, pkg_path: str, db_conn: sqlite3.Connection):
-    c = db_conn.cursor()
+def _add_pkg(pkg_name: str, pkg_type: str, pkg_path: str):
+    c = conn.cursor()
     c.execute("INSERT INTO packages VALUES (:name, 1, :type, :path)",{
         "name": pkg_name,
         "type": pkg_type,
         "path": pkg_path
     })
-    db_conn.commit()
+    conn.commit()
     c.close()
 
 def _check_tds(localdirname):
@@ -140,15 +141,15 @@ def _get_texmfhome():
     path = os.popen("kpsewhich -var-value TEXMFHOME").read().replace("\n","")
     return path
 
-def _check_update(pkg: str,con: sqlite3.Connection):
+def _check_update(pkg: str):
     pass
 
-def _get_all_pkgs(con:sqlite3.Connection):
-    c = con.cursor()
+def _get_all_pkgs():
+    c = conn.cursor()
     c.execute("SELECT * FROM packages")
     return c.fetchall()
 
-def _create_db(conn:sqlite3.Connection):
+def _create_db():
     c = conn.cursor()
     c.execute("""CREATE TABLE packages (
             name text,
@@ -165,7 +166,7 @@ def _type_folder(pkg_type: str):
     if pkg_type in ["sty", "cls"]:
         return "latex"
 
-def _get_type(pkg_name: str, db_conn: sqlite3.Connection):
+def _get_type(pkg_name: str):
     pass
 
 def _find_type(pkg_path):
@@ -252,7 +253,7 @@ def view():
     """
     Print the list of installed packages and all the informations in the database
     """
-    con = sqlite3.connect(".pkg.db")
+
     
     pkg_list = _get_all_pkgs(con) # this could throw exception if packages table doesnt exists
     t = Table("Package", "Version", "Type", box=box.HORIZONTALS, header_style="blue bold")
