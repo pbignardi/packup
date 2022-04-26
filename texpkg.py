@@ -284,14 +284,19 @@ def install(
     - understand the destination folder
     - copy the packages in the install folder into the tree_path
     """
-    # check if path exists
-    if not os.path.isdir(pkg_path) or len(os.listdir(pkg_path)) == 0:
-        console.print("Package directory [error]does not exists[/] or [error]is empty[/]")
+    isdir = os.path.isdir(pkg_path)
+    isfile = os.path.isfile(pkg_path)
+    if not isdir and not isfile:
+        console.print("Package file [error]does not exists[/] or directory [error]is empty[/]")
+    
+    source_files = [pkg_path] if isfile else map(os.path.abspath, os.listdir(pkg_path))
+    pkg_dir = os.path.basename(pkg_path) if isdir else os.path.splitext(os.path.basename(pkg_path))[0]
+
     # get pkg name - remove whitespaces in pkg_name
-    pkg_name = os.path.basename(os.path.abspath(pkg_path))
-    if " " in pkg_name:
-        console.print("Package directory name [error]must not contain whitespaces[/].")
-        return
+    if " " in pkg_dir:
+        console.print("Package name [error]must not contain whitespaces[/]")
+        console.print("[info]Removing whitespaces[/] from package name")
+        pkg_dir = pkg_dir.replace(" ","")
 
     if verbose:
         console.print(f"Installing package [info]{pkg_name}[/]")
